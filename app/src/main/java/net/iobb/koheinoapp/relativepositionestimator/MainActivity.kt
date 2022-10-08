@@ -61,8 +61,9 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                         Button(
                             onClick = {
                                 samplingMode.value = SamplingMode.Correcting
-                                estimator.samplingsForCorrecting.clear()
+                                estimator.resetCorrection()
                             },
+                            enabled = samplingMode.value != SamplingMode.Correcting
                         ) {
                             if (samplingMode.value == SamplingMode.Correcting) {
                                 Text(text = "補正中")
@@ -70,12 +71,12 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                                 Text(text = "補正")
                             }
                         }
-                        Text("補正値a_x: ${estimator.correction?.get(0)}\n" +
-                                "補正値a_y: ${estimator.correction?.get(1)}\n" +
-                                "補正値a_z: ${estimator.correction?.get(2)}")
-                        Text("補正後a_x: ${(currentSamplingItem.value?.getAX() ?: 0f) + (estimator.correction?.get(0) ?: 0f)}\n" +
-                                "補正後a_y: ${(currentSamplingItem.value?.getAY() ?: 0f) + (estimator.correction?.get(1) ?: 0f)}\n" +
-                                "補正後a_z: ${(currentSamplingItem.value?.getAZ() ?: 0f) + (estimator.correction?.get(2) ?: 0f)}")
+                        Text("補正値a_x: ${estimator.correctionVector?.get(0)}\n" +
+                                "補正値a_y: ${estimator.correctionVector?.get(1)}\n" +
+                                "補正値a_z: ${estimator.correctionVector?.get(2)}")
+                        Text("補正後a_x: ${(currentSamplingItem.value?.getAX() ?: 0f) + (estimator.correctionVector?.get(0) ?: 0f)}\n" +
+                                "補正後a_y: ${(currentSamplingItem.value?.getAY() ?: 0f) + (estimator.correctionVector?.get(1) ?: 0f)}\n" +
+                                "補正後a_z: ${(currentSamplingItem.value?.getAZ() ?: 0f) + (estimator.correctionVector?.get(2) ?: 0f)}")
                     }
                 }
             }
@@ -98,8 +99,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
             when(samplingMode.value){
                 SamplingMode.Correcting -> {
-                    estimator.samplingsForCorrecting.add(currentSamplingItem.value!!)
-                    if(estimator.samplingsForCorrecting.size >= 1000){
+                    estimator.addSamplingForCorrecting(currentSamplingItem.value!!){
                         estimator.calcCorrectionVector()
                         samplingMode.value = SamplingMode.Paused
                     }
