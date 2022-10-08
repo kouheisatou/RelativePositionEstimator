@@ -2,7 +2,7 @@ package net.iobb.koheinoapp.relativepositionestimator
 
 import java.sql.Time
 
-class PositionSamplingLogItem(
+class SamplingItem(
     acceleration: FloatArray,
     rotationMatrix: FloatArray
 ) {
@@ -11,7 +11,11 @@ class PositionSamplingLogItem(
     private val rotationMatrix = Matrix(4, 4, rotationMatrix)
     private val accelerationByGrand = this.rotationMatrix * this.acceleration
 
+    fun getAX(): Float = accelerationByGrand[0, 0]
+    fun getAY(): Float = accelerationByGrand[0, 1]
+    fun getAZ(): Float = accelerationByGrand[0, 2]
+
     override fun toString(): String {
-        return "AccelLogItem{${Time(samplingTimeMillis)}, acceleration=$acceleration\naccelerationByGland=$accelerationByGrand\nrotationMatrix=$rotationMatrix}"
+        return "PositionSamplingLogItem{${Time(samplingTimeMillis)}, acceleration=$acceleration\naccelerationByGland=$accelerationByGrand\nrotationMatrix=$rotationMatrix}"
     }
 }
