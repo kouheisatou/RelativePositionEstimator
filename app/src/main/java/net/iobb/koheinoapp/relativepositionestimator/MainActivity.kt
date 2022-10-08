@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     private lateinit var sensorManager: SensorManager
     private lateinit var estimator: Estimator
-    private var currentLogItem: MutableState<AccelLogItem?> = mutableStateOf(null)
+    private var currentLogItem: MutableState<PositionSamplingLogItem?> = mutableStateOf(null)
 
     private var acceleration: FloatArray? = null
     private var rotationMatrix: FloatArray? = null
@@ -68,7 +68,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         }
 
         if(acceleration != null && rotationMatrix != null){
-            currentLogItem.value = AccelLogItem(acceleration!!, rotationMatrix!!)
+            currentLogItem.value = PositionSamplingLogItem(acceleration!!, rotationMatrix!!)
 
             acceleration = null
             rotationMatrix = null
@@ -76,6 +76,5 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     }
 
-    override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
-    }
+    override fun onAccuracyChanged(p0: Sensor?, p1: Int) {}
 }
