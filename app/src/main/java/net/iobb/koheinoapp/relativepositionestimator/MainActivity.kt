@@ -8,17 +8,14 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -92,21 +89,41 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                                     "補正値a_y: ${estimator.correctionVector?.get(1)}\n" +
                                     "補正値a_z: ${estimator.correctionVector?.get(2)}"
                         )
-                        var correctedAX = (currentSamplingItem.value?.getAX() ?: 0f) + (estimator.correctionVector?.get(0) ?: 0f)
-                        var correctedAY = (currentSamplingItem.value?.getAY() ?: 0f) + (estimator.correctionVector?.get(1) ?: 0f)
-                        var correctedAZ = (currentSamplingItem.value?.getAZ() ?: 0f) + (estimator.correctionVector?.get(2) ?: 0f)
+                        var correctedAX = (currentSamplingItem.value?.getAX()
+                            ?: 0f) + (estimator.correctionVector?.get(0) ?: 0f)
+                        var correctedAY = (currentSamplingItem.value?.getAY()
+                            ?: 0f) + (estimator.correctionVector?.get(1) ?: 0f)
+                        var correctedAZ = (currentSamplingItem.value?.getAZ()
+                            ?: 0f) + (estimator.correctionVector?.get(2) ?: 0f)
                         Text(
                             "補正後a_x: $correctedAX\n" +
                                     "補正後a_y: $correctedAY\n" +
                                     "補正後a_z: $correctedAZ"
                         )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("位置推定")
+                            Switch(
+                                checked = samplingMode.value == SamplingMode.Sampling,
+                                onCheckedChange = { checked ->
+                                    samplingMode.value = if (checked) {
+                                        SamplingMode.Sampling
+                                    } else {
+                                        SamplingMode.Paused
+                                    }
+
+                                },
+                            )
+                            Button(onClick = {
+                                estimator.resetCurrentPosition()
+                            }) {
+                                Text(text = "リセット")
+                            }
+                        }
                         Graph(
-                            x = correctedAX,
-                            y = correctedAY,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(color = Color.Black),
-                            ratio = 1000f,
+                            x = estimator.currentPosition[0],
+                            y = estimator.currentPosition[1],
+                            modifier = Modifier.fillMaxSize(),
+                            ratio = 0.01f,
                         )
                     }
                 }
@@ -138,6 +155,9 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                         },
                     )
                 }
+                SamplingMode.Sampling -> {
+                    estimator.addSampling(currentSamplingItem.value!!)
+                }
             }
 
             sensorAcceleration = null
@@ -158,12 +178,12 @@ fun Graph(
 ) {
     Canvas(modifier = modifier) {
         drawLine(
-            color = Color.White,
+            color = Color.Black,
             start = Offset(0f, size.height / 2),
             end = Offset(size.width, size.height / 2)
         )
         drawLine(
-            color = Color.White,
+            color = Color.Black,
             start = Offset(size.width / 2, 0f),
             end = Offset(size.width / 2, size.height)
         )
