@@ -7,15 +7,22 @@ import android.hardware.SensorManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PointMode
 import net.iobb.koheinoapp.relativepositionestimator.ui.theme.RelativePositionEstimatorTheme
 
 class MainActivity : ComponentActivity(), SensorEventListener {
@@ -55,28 +62,52 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                     color = MaterialTheme.colors.background
                 ) {
                     Column {
-                        Text("a_x: ${currentSamplingItem.value?.getAX()}\n" +
-                                "a_y: ${currentSamplingItem.value?.getAY()}\n" +
-                                "a_z: ${currentSamplingItem.value?.getAZ()}")
-                        Button(
-                            onClick = {
-                                samplingMode.value = SamplingMode.Correcting
+                        Text(
+                            "a_x: ${currentSamplingItem.value?.getAX()}\n" +
+                                    "a_y: ${currentSamplingItem.value?.getAY()}\n" +
+                                    "a_z: ${currentSamplingItem.value?.getAZ()}"
+                        )
+                        Row {
+                            Button(
+                                onClick = {
+                                    samplingMode.value = SamplingMode.Correcting
+                                    estimator.resetCorrection()
+                                },
+                                enabled = samplingMode.value != SamplingMode.Correcting
+                            ) {
+                                if (samplingMode.value == SamplingMode.Correcting) {
+                                    Text(text = "補正中")
+                                } else {
+                                    Text(text = "補正")
+                                }
+                            }
+                            Button(onClick = {
                                 estimator.resetCorrection()
-                            },
-                            enabled = samplingMode.value != SamplingMode.Correcting
-                        ) {
-                            if (samplingMode.value == SamplingMode.Correcting) {
-                                Text(text = "補正中")
-                            } else {
-                                Text(text = "補正")
+                            }) {
+                                Text("補正値をリセット")
                             }
                         }
-                        Text("補正値a_x: ${estimator.correctionVector?.get(0)}\n" +
-                                "補正値a_y: ${estimator.correctionVector?.get(1)}\n" +
-                                "補正値a_z: ${estimator.correctionVector?.get(2)}")
-                        Text("補正後a_x: ${(currentSamplingItem.value?.getAX() ?: 0f) + (estimator.correctionVector?.get(0) ?: 0f)}\n" +
-                                "補正後a_y: ${(currentSamplingItem.value?.getAY() ?: 0f) + (estimator.correctionVector?.get(1) ?: 0f)}\n" +
-                                "補正後a_z: ${(currentSamplingItem.value?.getAZ() ?: 0f) + (estimator.correctionVector?.get(2) ?: 0f)}")
+                        Text(
+                            "補正値a_x: ${estimator.correctionVector?.get(0)}\n" +
+                                    "補正値a_y: ${estimator.correctionVector?.get(1)}\n" +
+                                    "補正値a_z: ${estimator.correctionVector?.get(2)}"
+                        )
+                        var correctedAX = (currentSamplingItem.value?.getAX() ?: 0f) + (estimator.correctionVector?.get(0) ?: 0f)
+                        var correctedAY = (currentSamplingItem.value?.getAY() ?: 0f) + (estimator.correctionVector?.get(1) ?: 0f)
+                        var correctedAZ = (currentSamplingItem.value?.getAZ() ?: 0f) + (estimator.correctionVector?.get(2) ?: 0f)
+                        Text(
+                            "補正後a_x: $correctedAX\n" +
+                                    "補正後a_y: $correctedAY\n" +
+                                    "補正後a_z: $correctedAZ"
+                        )
+                        Graph(
+                            x = correctedAX,
+                            y = correctedAY,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(color = Color.Black),
+                            ratio = 1000f,
+                        )
                     }
                 }
             }
@@ -97,12 +128,15 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         if (sensorAcceleration != null && sensorRotationMatrix != null) {
             currentSamplingItem.value = SamplingItem(sensorAcceleration!!, sensorRotationMatrix!!)
 
-            when(samplingMode.value){
+            when (samplingMode.value) {
                 SamplingMode.Correcting -> {
-                    estimator.addSamplingForCorrecting(currentSamplingItem.value!!){
-                        estimator.calcCorrectionVector()
-                        samplingMode.value = SamplingMode.Paused
-                    }
+                    estimator.addSamplingForCorrecting(
+                        samplingItem = currentSamplingItem.value!!,
+                        onSamplingFulled = {
+                            estimator.calcCorrectionVector()
+                            samplingMode.value = SamplingMode.Paused
+                        },
+                    )
                 }
             }
 
@@ -115,6 +149,33 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     override fun onAccuracyChanged(p0: Sensor?, p1: Int) {}
 }
 
-enum class SamplingMode{
+@Composable
+fun Graph(
+    x: Float,
+    y: Float,
+    modifier: Modifier,
+    ratio: Float,
+) {
+    Canvas(modifier = modifier) {
+        drawLine(
+            color = Color.White,
+            start = Offset(0f, size.height / 2),
+            end = Offset(size.width, size.height / 2)
+        )
+        drawLine(
+            color = Color.White,
+            start = Offset(size.width / 2, 0f),
+            end = Offset(size.width / 2, size.height)
+        )
+        drawPoints(
+            points = listOf(Offset(size.width / 2 + x * ratio, size.height / 2 + y * ratio)),
+            pointMode = PointMode.Points,
+            color = Color.Red,
+            strokeWidth = 10f,
+        )
+    }
+}
+
+enum class SamplingMode {
     Correcting, Sampling, Paused
 }
