@@ -32,6 +32,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     private var sensorRotationMatrix: FloatArray? = null
 
     private var samplingMode = mutableStateOf(SamplingMode.Paused)
+    private var displayingGraphType = mutableStateOf(GraphType.Acceleration)
 
     override fun onResume() {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
@@ -119,12 +120,60 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                                 Text(text = "リセット")
                             }
                         }
-                        Graph(
-                            x = estimator.currentPosition[0],
-                            y = estimator.currentPosition[1],
-                            modifier = Modifier.fillMaxSize(),
-                            ratio = 0.01f,
-                        )
+
+                        Row {
+                            Button(
+                                onClick = {
+                                    displayingGraphType.value = GraphType.Acceleration
+                                },
+                                enabled = displayingGraphType.value != GraphType.Acceleration
+                            ) {
+                                Text("Acceleration")
+                            }
+                            Button(
+                                onClick = {
+                                    displayingGraphType.value = GraphType.Velocity
+                                },
+                                enabled = displayingGraphType.value != GraphType.Velocity
+                            ) {
+                                Text("Velocity")
+                            }
+                            Button(
+                                onClick = {
+                                    displayingGraphType.value = GraphType.Position
+                                },
+                                enabled = displayingGraphType.value != GraphType.Position
+                            ) {
+                                Text("Position")
+                            }
+                        }
+
+                        when(displayingGraphType.value){
+                            GraphType.Acceleration -> {
+                                Graph(
+                                    x = correctedAX,
+                                    y = correctedAY,
+                                    modifier = Modifier.fillMaxSize(),
+                                    ratio = 1000f,
+                                )
+                            }
+                            GraphType.Velocity -> {
+                                Graph(
+                                    x = estimator.currentVelocity[0],
+                                    y = estimator.currentVelocity[1],
+                                    modifier = Modifier.fillMaxSize(),
+                                    ratio = 10f,
+                                )
+                            }
+                            GraphType.Position -> {
+                                Graph(
+                                    x = estimator.currentPosition[0],
+                                    y = estimator.currentPosition[1],
+                                    modifier = Modifier.fillMaxSize(),
+                                    ratio = 0.01f,
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -198,4 +247,8 @@ fun Graph(
 
 enum class SamplingMode {
     Correcting, Sampling, Paused
+}
+
+enum class GraphType {
+    Acceleration, Velocity, Position
 }
