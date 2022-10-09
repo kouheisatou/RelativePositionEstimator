@@ -11,26 +11,52 @@ class Estimator {
     private val samplingsForCorrecting = mutableListOf<SamplingItem>()
 
     var correctionVector: FloatArray? = null
+    val currentAcceleration = floatArrayOf(0f, 0f, 0f)
     val currentVelocity = floatArrayOf(0f, 0f, 0f)
     val currentPosition = floatArrayOf(0f, 0f, 0f)
 
     fun addSampling(samplingItem: SamplingItem) {
+        val dt: Float =
+            if (samplings.isNotEmpty()) {
+                (samplings.last().samplingTimeMillis - samplingItem.samplingTimeMillis).toFloat() / 1000f
+            } else {
+                0f
+            }
+
+        currentAcceleration[0] = samplingItem.getAX() + (correctionVector?.get(0) ?: 0f)
+        currentAcceleration[1] = samplingItem.getAX() + (correctionVector?.get(1) ?: 0f)
+        currentAcceleration[2] = samplingItem.getAX() + (correctionVector?.get(2) ?: 0f)
+
+        val aX: Float = currentAcceleration[0]
+        val aY: Float = currentAcceleration[1]
+        val aZ: Float = currentAcceleration[2]
+
+        val vX0: Float = currentVelocity[0]
+        val vY0: Float = currentVelocity[1]
+        val vZ0: Float = currentVelocity[2]
+
+        val x0: Float = currentPosition[0]
+        val y0: Float = currentPosition[0]
+        val z0: Float = currentPosition[0]
+
+        currentVelocity[0] = aX * dt + vX0
+        currentVelocity[1] = aX * dt + vY0
+        currentVelocity[2] = aX * dt + vZ0
+
+        currentPosition[0] = 0.5f * aX * dt * dt + vX0 * dt + x0
+        currentPosition[1] = 0.5f * aY * dt * dt + vY0 * dt + y0
+        currentPosition[2] = 0.5f * aZ * dt * dt + vZ0 * dt + z0
+
+        println("$aX, $vX0, $x0, $dt")
+
         samplings.add(samplingItem)
-
-        currentVelocity[0] += (samplingItem.getAX() + (correctionVector?.get(0) ?: 0f))
-        currentVelocity[1] += (samplingItem.getAY() + (correctionVector?.get(1) ?: 0f))
-        currentVelocity[2] += (samplingItem.getAZ() + (correctionVector?.get(2) ?: 0f))
-
-        currentPosition[0] += currentVelocity[0]
-        currentPosition[1] += currentVelocity[1]
-        currentPosition[2] += currentVelocity[2]
 
         if (samplings.size > NUMBER_OF_RETAINING_SAMPLINGS) {
             samplings.removeAt(0)
         }
     }
 
-    fun resetCurrentPosition(){
+    fun resetCurrentPosition() {
         currentVelocity[0] = 0f
         currentVelocity[1] = 0f
         currentVelocity[2] = 0f

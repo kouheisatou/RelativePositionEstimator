@@ -162,7 +162,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                                     x = estimator.currentVelocity[0],
                                     y = estimator.currentVelocity[1],
                                     modifier = Modifier.fillMaxSize(),
-                                    ratio = 10f,
+                                    ratio = 1000f,
                                 )
                             }
                             GraphType.Position -> {
@@ -170,7 +170,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                                     x = estimator.currentPosition[0],
                                     y = estimator.currentPosition[1],
                                     modifier = Modifier.fillMaxSize(),
-                                    ratio = 0.01f,
+                                    ratio = 1000f,
                                 )
                             }
                         }
@@ -237,7 +237,7 @@ fun Graph(
             end = Offset(size.width / 2, size.height)
         )
         drawPoints(
-            points = listOf(Offset(size.width / 2 + x * ratio, size.height / 2 + y * ratio)),
+            points = listOf(Offset(size.width / 2 + y * ratio, size.height / 2 + x * ratio)),
             pointMode = PointMode.Points,
             color = Color.Red,
             strokeWidth = 10f,
